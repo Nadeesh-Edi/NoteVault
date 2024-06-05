@@ -10,6 +10,8 @@ import { useQuery } from "@realm/react";
 import Note from "../schemas/NoteSchema";
 import { LogBox } from 'react-native';
 import ConfirmDialog from "../components/ConfirmDialog";
+import { useAppDispatch, useAppSelector } from "../store/dispatchSelectors";
+import { setIsEdit } from "../store/isEditSlice";
 
 LogBox.ignoreLogs([
     'Non-serializable values were found in the navigation state',
@@ -20,6 +22,7 @@ function NotesList({ navigation }: { navigation: any }): JSX.Element {
     const [showKeyModal, setShowKeyModal] = useState(false)
     const [isKeyAvailable, setIsKeyAvailable] = useState(false)
     const theme = useTheme()
+    const dispatch = useAppDispatch();
     
     const notes = useQuery(Note)
 
@@ -30,21 +33,24 @@ function NotesList({ navigation }: { navigation: any }): JSX.Element {
     const checkForKey = async () => {
         try {
             const key = await AsyncStorage.getItem('encryptKey')
-            console.log("key", key);
             
             if (!key) {
                 setIsKeyAvailable(false)
+                return false;
             } else {
                 setIsKeyAvailable(true)
+                return true;
             }
         } catch (error) {
             console.log(error);
+            return false;
         }
     }
 
     const addNewNote = async () => {
-        await checkForKey()
-        if (isKeyAvailable) {
+        const keyAvailable = await checkForKey()
+        if (keyAvailable) {
+            dispatch(setIsEdit(false));
             navigation.navigate("AddNote")
         } else {
             setShowKeySnack(true)
