@@ -5,7 +5,7 @@
  * @format
  */
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationOptions } from '@react-navigation/native-stack';
@@ -13,9 +13,11 @@ import { useTheme } from 'react-native-paper';
 import { Provider } from 'react-redux';
 import { store } from './src/store/store';
 import {
+  AppState,
   SafeAreaView,
   StatusBar,
   StyleSheet,
+  View,
   useColorScheme,
 } from 'react-native';
 
@@ -27,8 +29,10 @@ import HowToUse from './src/pages/HowToUse';
 const Stack = createNativeStackNavigator()
 
 function App(): JSX.Element {
+  const appState = useRef(AppState.currentState);
   const isDarkMode = useColorScheme() === 'dark';
   const theme = useTheme()
+  const [isEmptyTheme, setIsEmptyTheme] = useState(false)
 
   const backgroundStyle = {
     backgroundColor: theme.colors.primary,
@@ -46,6 +50,27 @@ function App(): JSX.Element {
     headerTintColor: '#fff',
   }
 
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        setIsEmptyTheme(false)
+      }
+
+      appState.current = nextAppState;
+    });
+
+    const subs = AppState.addEventListener('blur', newState => {
+      setIsEmptyTheme(true)
+    })
+
+    const subfocus = AppState.addEventListener('focus', newState => {
+      setIsEmptyTheme(false)
+    })
+  }, [])
+
   return (
     <Provider store={store}>
       <SafeAreaView style={backgroundStyle}>
@@ -53,14 +78,16 @@ function App(): JSX.Element {
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
           backgroundColor={backgroundStyle.backgroundColor}
         />
-        <NavigationContainer>
-          <Stack.Navigator>
-            <Stack.Screen name="NotesList" component={NotesList} options={withoutHeader} />
-            <Stack.Screen name="AddNote" component={AddNote} options={withoutHeader} />
-            <Stack.Screen name="OpenNote" component={OpenNote} options={withoutHeader} />
-            <Stack.Screen name="HowtoUse" component={HowToUse} options={withoutHeader} />
-          </Stack.Navigator>
-        </NavigationContainer>
+        {isEmptyTheme && <View style={styles.emptyBg}></View>}
+        {!isEmptyTheme &&
+          <NavigationContainer>
+            <Stack.Navigator>
+              <Stack.Screen name="NotesList" component={NotesList} options={withoutHeader} />
+              <Stack.Screen name="AddNote" component={AddNote} options={withoutHeader} />
+              <Stack.Screen name="OpenNote" component={OpenNote} options={withoutHeader} />
+              <Stack.Screen name="HowtoUse" component={HowToUse} options={withoutHeader} />
+            </Stack.Navigator>
+          </NavigationContainer>}
       </SafeAreaView>
     </Provider>
   );
@@ -83,6 +110,9 @@ const styles = StyleSheet.create({
   highlight: {
     fontWeight: '700',
   },
+  emptyBg: {
+    backgroundColor: '#fff'
+  }
 });
 
 export default App;
