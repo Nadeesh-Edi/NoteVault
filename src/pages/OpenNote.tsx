@@ -11,6 +11,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAppDispatch, useAppSelector } from "../store/dispatchSelectors";
 import { setIsEdit } from "../store/isEditSlice";
 import { setSelectedContent, setSelectedId, setSelectedTitle } from "../store/selectedIdSlicer";
+import ReactNativeBiometrics from "react-native-biometrics";
 
 interface OpenNoteProps {
     route: RouteProp<{ Details: { id: string } }>;
@@ -24,6 +25,7 @@ const OpenNote = ({ route, navigation } : { route: any, navigation: any },) => {
     const realm = useRealm()
     const selectedNote = useObject(Note, noteId)
     const dispatch = useAppDispatch();
+    const rnBiometrics = new ReactNativeBiometrics({ allowDeviceCredentials: true })
 
     const [cancelConfirm, setCancelConfirm] = useState(false)
     const [cancelLoading, setCancelLoading] = useState(false)
@@ -63,28 +65,50 @@ const OpenNote = ({ route, navigation } : { route: any, navigation: any },) => {
 
     const decryptContent = async (key: string) => {
         const decryptedContent = selectedNote ? decryptCypher(selectedNote.content, key) : ''
-        console.log(decryptedContent);
         setEnterKey(false)
         setNoteContent(decryptedContent)
 
         try {
             const storedKey = await AsyncStorage.getItem('encryptKey')
             setIsDecrypted(storedKey == key)
-            console.log(isDecrypted);
-            
         } catch (e) {
-            console.log(e); 
+            setIsDecrypted(false)
         }
     }
 
     const editNote = (selected: any) => {
         dispatch(setIsEdit(true))
-        console.log("selected open", selected._id.toString());
         
         dispatch(setSelectedId(selected._id))
         dispatch(setSelectedTitle(selected.title))
         dispatch(setSelectedContent(noteContent))
         navigation.navigate("AddNote")
+    }
+
+    const startAuthentication = () => {
+        rnBiometrics.simplePrompt({
+            promptMessage: "Place fingerprint"
+        }).then(async (result) => {
+            if (result.success) {
+                ToastAndroid.show("Successfully authenticated", ToastAndroid.SHORT);
+                const storedKey = await AsyncStorage.getItem('encryptKey')
+                if (storedKey) {
+                    decryptContent(storedKey);
+                }
+            } else {
+                ToastAndroid.show("Authentication failed", ToastAndroid.SHORT);
+            }
+        })
+    }
+
+    const startDecryption = () => {
+        AsyncStorage.getItem("isFingerprint").then(res => {
+            if (res === "1") {
+                startAuthentication();
+            } else {
+                setEnterKey(true);
+            }
+        })
     }
     
     return (
@@ -100,7 +124,7 @@ const OpenNote = ({ route, navigation } : { route: any, navigation: any },) => {
             </Appbar.Header>
 
             <View style={styles.cardBackground}>
-                <Card mode="contained" onLongPress={() => setEnterKey(true)} >
+                <Card mode="contained" onLongPress={() => startDecryption()} >
                     <Card.Content>
                         <Text variant="bodyMedium">{ noteContent }</Text>
                     </Card.Content>

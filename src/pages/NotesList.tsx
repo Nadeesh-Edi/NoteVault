@@ -97,19 +97,6 @@ function NotesList({ navigation }: { navigation: any }): JSX.Element {
                 </View>
             }
 
-            {/* Snackbar to show to open key modal */}
-            {/* <Snackbar
-                visible={showKeySnack}
-                onDismiss={onDismissSnackBar}
-                action={{
-                    label: 'ADD',
-                    onPress: () => {
-                        setShowKeyModal(true)
-                    }
-                }}>
-                Please add a encryption key to proceed
-            </Snackbar> */}
-
             <FAB 
                 icon="plus" 
                 style={styles.plusBtn} 
