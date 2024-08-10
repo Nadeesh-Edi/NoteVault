@@ -1,10 +1,16 @@
-import React from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, ToastAndroid, View } from "react-native";
 import { Appbar, Icon, Text, useTheme } from "react-native-paper";
 import NotifCard from "../components/NotifCard";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Switch } from 'react-native-paper';
+import ReactNativeBiometrics, { BiometryTypes } from "react-native-biometrics";
 
 function HowToUse({ navigation }: { navigation: any }): JSX.Element {
     const theme = useTheme()
+    const [isSwitchOn, setIsSwitchOn] = useState(false)
+    const [isFingerprintAvailable, setIsFingerprintAvailable] = useState(false)
+    const rnBiometrics = new ReactNativeBiometrics({ allowDeviceCredentials: true })
 
     const title1 = "Encryption key"
     const encryptionKey = "This is a unique key which will be used to encrypt all your notes. The notes can only be decrypted using this key so make sure not to forget. Once set, it cannot be changed."
@@ -13,10 +19,58 @@ function HowToUse({ navigation }: { navigation: any }): JSX.Element {
     const howtoAdd = "Adding a note is easy. After setting a key, just press on the (+) icon in the Notes (home) screen. this will direct you to the page to add a note. All the notes you add will be encrypted by the key you entered previously."
     const title3 = "How to decrypt"
     const hotoDecrypt = "Click on the relevant note from the Notes (home) screen. It will show you the encrypted text. Press and hold on this text until a popup appears to enter the key. After entering the correct key only you will be able to view the proper note content."
+    const fingerPrintMsg = "Use fingerprint to decrypt the notes"
 
     const goBack = () => {
         navigation.goBack()
     }
+
+    const onToggleSwitch = (value : boolean) => {
+        if (value === true) {
+            rnBiometrics.simplePrompt({
+                promptMessage: "Place fingerprint to confirm"
+            }).then((result) => {
+                if (result.success) {
+                    saveConfig(value ? "1" : "0");
+                } else {
+                    ToastAndroid.show("Authentication failed", ToastAndroid.SHORT);
+                }
+            })
+        }
+    }
+
+    const saveConfig = (value: string) => {
+        AsyncStorage.setItem("isFingerprint", value).then(res => {
+            ToastAndroid.show("Successfully saved", ToastAndroid.SHORT)
+        }).catch(err => {
+            ToastAndroid.show("Save failed", ToastAndroid.SHORT)
+        })
+    }
+
+    const checkBiometricAuth = async () => {
+        rnBiometrics.isSensorAvailable().then((res) => {
+            const { available, biometryType } = res;
+            if (available && biometryType === BiometryTypes.TouchID) {
+                setIsFingerprintAvailable(true);
+                getFingerprintConfig()
+            } else {
+                setIsFingerprintAvailable(false);
+            }
+        }).catch((err) => {
+            setIsFingerprintAvailable(false);
+        })
+    }
+
+    const getFingerprintConfig = async () => {
+        const storedConfig = await AsyncStorage.getItem('isFingerprint')
+        if (storedConfig === '1') {
+            setIsSwitchOn(true)
+        }
+    }
+
+    useEffect(() => {
+        checkBiometricAuth();
+    })
 
     const noteCard = (title: string, content: string, notice?: string): JSX.Element => {
         return (
@@ -42,6 +96,21 @@ function HowToUse({ navigation }: { navigation: any }): JSX.Element {
         )
     }
 
+    const configSwitch = () => {
+        return (
+            <View style={styles.notifBackGround}>
+                <View style={styles.configRow}>
+                    <View style={{ flex: 4 }}>
+                        <Text variant="labelLarge">{fingerPrintMsg}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Switch value={isSwitchOn} onValueChange={onToggleSwitch} color={theme.colors.primary} style={{ flex: 1 }} />
+                    </View>
+                </View>
+            </View>
+        )
+    }
+
     return (
         <View style={{
             backgroundColor: theme.colors.background,
@@ -55,6 +124,7 @@ function HowToUse({ navigation }: { navigation: any }): JSX.Element {
             {noteCard(title1, encryptionKey, encryptNotice)}
             {noteCard(title2, howtoAdd)}
             {noteCard(title3, hotoDecrypt)}
+            {isFingerprintAvailable && configSwitch()}
         </View>
     )
 }
@@ -74,6 +144,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#FFB2B6',
+        padding: 10
+    },
+    configRow: {
+        flexDirection: 'row', 
+        borderRadius: 10, 
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#59a5eb',
         padding: 10
     }
 })
