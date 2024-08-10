@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import selectedIdReducer from './selectedIdSlicer';
 import isEditReducer from './isEditSlice'
+import isAuthReducer from './isAuthSlice';
 
 export const store = configureStore({
     reducer: {
         selectedId: selectedIdReducer,
-        isEdit: isEditReducer
+        isEdit: isEditReducer,
+        isAuthenticating: isAuthReducer
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

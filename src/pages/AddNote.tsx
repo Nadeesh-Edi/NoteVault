@@ -80,7 +80,7 @@ function AddNote({ navigation }: { navigation: any }): JSX.Element {
     }
 
     useEffect(() => {
-        if (title == '' || content === '') {
+        if (title.trim() == '' || content.trim() === '') {
             setIsSaveDisabled(true)
         } else {
             setIsSaveDisabled(false)

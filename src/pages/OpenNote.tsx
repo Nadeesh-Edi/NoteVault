@@ -12,7 +12,7 @@ import { useAppDispatch, useAppSelector } from "../store/dispatchSelectors";
 import { setIsEdit } from "../store/isEditSlice";
 import { setSelectedContent, setSelectedId, setSelectedTitle } from "../store/selectedIdSlicer";
 import ReactNativeBiometrics from "react-native-biometrics";
-
+import { setIsAuthenticating } from "../store/isAuthSlice";
 interface OpenNoteProps {
     route: RouteProp<{ Details: { id: string } }>;
     navigation: NavigationProp<any>;
@@ -34,8 +34,9 @@ const OpenNote = ({ route, navigation } : { route: any, navigation: any },) => {
     const cancelNotice = "Are you sure you want to cancel? This action is irreversible."
 
     useEffect(() => {
-        selectedNote ? setNoteContent(selectedNote.content) : ''
+        selectedNote && noteContent == "" ? setNoteContent(selectedNote.content) : ''
     }, [selectedNote])
+    
 
     const goBack = () => {
         navigation.goBack()
@@ -51,8 +52,6 @@ const OpenNote = ({ route, navigation } : { route: any, navigation: any },) => {
             rejectCancel()
             goBack()
         } catch(e) {
-            console.log("error", e);
-            
             ToastAndroid.show("Error deleting the Note", ToastAndroid.SHORT)
         } finally {
             setCancelLoading(false)
@@ -86,6 +85,7 @@ const OpenNote = ({ route, navigation } : { route: any, navigation: any },) => {
     }
 
     const startAuthentication = () => {
+        dispatch(setIsAuthenticating(true))
         rnBiometrics.simplePrompt({
             promptMessage: "Place fingerprint"
         }).then(async (result) => {
@@ -98,6 +98,8 @@ const OpenNote = ({ route, navigation } : { route: any, navigation: any },) => {
             } else {
                 ToastAndroid.show("Authentication failed", ToastAndroid.SHORT);
             }
+        }).finally(() => {
+            dispatch(setIsAuthenticating(false))
         })
     }
 

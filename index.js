@@ -8,6 +8,8 @@ import {name as appName} from './app.json';
 import { MD3LightTheme as DefaultTheme, PaperProvider } from 'react-native-paper';
 import Note from './src/schemas/NoteSchema';
 import { RealmProvider } from '@realm/react';
+import { Provider } from 'react-redux';
+import { store } from './src/store/store';
 
 const theme = {
     ...DefaultTheme,
@@ -26,7 +28,9 @@ export default function Main() {
     return (
         <RealmProvider schema={[Note]}>
             <PaperProvider theme={theme}>
-                <App />
+                <Provider store={store}>
+                    <App />
+                </Provider>
             </PaperProvider>
         </RealmProvider>
     )

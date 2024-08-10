@@ -10,8 +10,6 @@ import type { PropsWithChildren } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
-import { Provider } from 'react-redux';
-import { store } from './src/store/store';
 import {
   AppState,
   SafeAreaView,
@@ -25,6 +23,7 @@ import NotesList from './src/pages/NotesList';
 import AddNote from './src/pages/AddNote';
 import OpenNote from './src/pages/OpenNote';
 import HowToUse from './src/pages/HowToUse';
+import { useAppSelector } from "./src/store/dispatchSelectors";
 
 const Stack = createNativeStackNavigator()
 
@@ -33,6 +32,8 @@ function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
   const theme = useTheme()
   const [isEmptyTheme, setIsEmptyTheme] = useState(false)
+  const { isAuthenticating } = useAppSelector(state => state.isAuthenticating)
+  const isAuthenticatingRef = useRef(isAuthenticating)
 
   const backgroundStyle = {
     backgroundColor: theme.colors.primary,
@@ -63,7 +64,9 @@ function App(): JSX.Element {
     });
 
     const subs = AppState.addEventListener('blur', newState => {
-      setIsEmptyTheme(true)
+      if (!isAuthenticatingRef.current) {
+        setIsEmptyTheme(true)
+      }
     })
 
     const subfocus = AppState.addEventListener('focus', newState => {
@@ -71,8 +74,11 @@ function App(): JSX.Element {
     })
   }, [])
 
+  useEffect(() => {
+    isAuthenticatingRef.current = isAuthenticating;
+  }, [isAuthenticating])
+
   return (
-    <Provider store={store}>
       <SafeAreaView style={backgroundStyle}>
         <StatusBar
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
@@ -89,7 +95,6 @@ function App(): JSX.Element {
             </Stack.Navigator>
           </NavigationContainer>}
       </SafeAreaView>
-    </Provider>
   );
 }
 

@@ -7,7 +7,8 @@ import NotifCard from "../components/NotifCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Switch } from 'react-native-paper';
 import ReactNativeBiometrics, { BiometryTypes } from "react-native-biometrics";
-
+import { useAppDispatch } from "../store/dispatchSelectors";
+import { setIsAuthenticating } from "../store/isAuthSlice";
 interface AddKeyModalProps {
     visible: boolean,
     setVisible: Dispatch<SetStateAction<boolean>>
@@ -21,6 +22,7 @@ const  AddKeyModal: FC<AddKeyModalProps> = (props) : JSX.Element => {
     const showModal = () => props.setVisible(true);
     const hideModal = () => props.setVisible(false);
     const theme = useTheme()
+    const dispatch = useAppDispatch()
     const rnBiometrics = new ReactNativeBiometrics({ allowDeviceCredentials: true })
 
     const alertMsg = "This key will be used to encrypt all your notes. Once set, it cannot be changed."
@@ -53,6 +55,7 @@ const  AddKeyModal: FC<AddKeyModalProps> = (props) : JSX.Element => {
     }
 
     const authenticateSave = () => {
+        dispatch(setIsAuthenticating(true))
         rnBiometrics.simplePrompt({
             promptMessage: "Place fingerprint"
         }).then((result) => {
@@ -61,6 +64,8 @@ const  AddKeyModal: FC<AddKeyModalProps> = (props) : JSX.Element => {
             } else {
                 ToastAndroid.show("Authentication failed", ToastAndroid.SHORT);
             }
+        }).finally(() => {
+            dispatch(setIsAuthenticating(false))
         })
     }
 
@@ -71,7 +76,8 @@ const  AddKeyModal: FC<AddKeyModalProps> = (props) : JSX.Element => {
     const checkBiometricAuth = async () => {
         rnBiometrics.isSensorAvailable().then((res) => {
             const { available, biometryType } = res;
-            if (available && biometryType === BiometryTypes.TouchID) {
+            
+            if (available && biometryType === BiometryTypes.Biometrics) {
                 setIsFingerprintAvailable(true);
             } else {
                 setIsFingerprintAvailable(false);

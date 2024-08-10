@@ -5,12 +5,15 @@ import NotifCard from "../components/NotifCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Switch } from 'react-native-paper';
 import ReactNativeBiometrics, { BiometryTypes } from "react-native-biometrics";
+import { useAppDispatch } from "../store/dispatchSelectors";
+import { setIsAuthenticating } from "../store/isAuthSlice";
 
 function HowToUse({ navigation }: { navigation: any }): JSX.Element {
     const theme = useTheme()
     const [isSwitchOn, setIsSwitchOn] = useState(false)
     const [isFingerprintAvailable, setIsFingerprintAvailable] = useState(false)
     const rnBiometrics = new ReactNativeBiometrics({ allowDeviceCredentials: true })
+    const dispatch = useAppDispatch();
 
     const title1 = "Encryption key"
     const encryptionKey = "This is a unique key which will be used to encrypt all your notes. The notes can only be decrypted using this key so make sure not to forget. Once set, it cannot be changed."
@@ -26,22 +29,24 @@ function HowToUse({ navigation }: { navigation: any }): JSX.Element {
     }
 
     const onToggleSwitch = (value : boolean) => {
-        if (value === true) {
-            rnBiometrics.simplePrompt({
-                promptMessage: "Place fingerprint to confirm"
-            }).then((result) => {
-                if (result.success) {
-                    saveConfig(value ? "1" : "0");
-                } else {
-                    ToastAndroid.show("Authentication failed", ToastAndroid.SHORT);
-                }
-            })
-        }
+        dispatch(setIsAuthenticating(true))
+        rnBiometrics.simplePrompt({
+            promptMessage: "Place fingerprint to confirm"
+        }).then((result) => {
+            if (result.success) {
+                saveConfig(value ? "1" : "0");
+            } else {
+                ToastAndroid.show("Authentication failed", ToastAndroid.SHORT);
+            }
+        }).finally(() => {
+            dispatch(setIsAuthenticating(false))
+        })
     }
 
     const saveConfig = (value: string) => {
         AsyncStorage.setItem("isFingerprint", value).then(res => {
             ToastAndroid.show("Successfully saved", ToastAndroid.SHORT)
+            setIsSwitchOn(value === "1")
         }).catch(err => {
             ToastAndroid.show("Save failed", ToastAndroid.SHORT)
         })
@@ -50,7 +55,7 @@ function HowToUse({ navigation }: { navigation: any }): JSX.Element {
     const checkBiometricAuth = async () => {
         rnBiometrics.isSensorAvailable().then((res) => {
             const { available, biometryType } = res;
-            if (available && biometryType === BiometryTypes.TouchID) {
+            if (available && biometryType === BiometryTypes.Biometrics) {
                 setIsFingerprintAvailable(true);
                 getFingerprintConfig()
             } else {
