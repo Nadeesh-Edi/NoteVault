@@ -8,6 +8,7 @@ import Note from "../schemas/NoteSchema";
 import { createCypher } from '../hooks/encryption'
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAppDispatch, useAppSelector } from "../store/dispatchSelectors";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 function AddNote({ navigation }: { navigation: any }): JSX.Element {
     const [title, setTitle] = useState("");
@@ -97,11 +98,18 @@ function AddNote({ navigation }: { navigation: any }): JSX.Element {
                 <Appbar.Content title={isEdit ? "Edit Note" : "Add Note"} color={theme.colors.secondary} />
             </Appbar.Header>
 
-            <MainInputField label="Note title" value={title} change={setTitle}/>
+            <KeyboardAwareScrollView
+                enableOnAndroid
+                extraScrollHeight={24}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ flexGrow: 1 }}
+            >
+                <MainInputField label="Note title" value={title} change={setTitle} />
 
-            <MainInputField label="Note Content" value={content} change={setContent} isMultiLine={true} />
+                <MainInputField label="Note Content" value={content} change={setContent} isMultiLine={true} />
 
-            <MainButton text="SAVE NOTE" onPress={onPressSave} isDisabled={isSaveDisabled} />
+                <MainButton text="SAVE NOTE" onPress={onPressSave} isDisabled={isSaveDisabled} />
+            </KeyboardAwareScrollView>
         </View>
     )
 }
