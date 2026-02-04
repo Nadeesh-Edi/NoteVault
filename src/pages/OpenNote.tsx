@@ -63,13 +63,17 @@ const OpenNote = ({ route, navigation } : { route: any, navigation: any },) => {
     }
 
     const decryptContent = async (key: string) => {
-        const decryptedContent = selectedNote ? decryptCypher(selectedNote.content, key) : ''
-        setEnterKey(false)
-        setNoteContent(decryptedContent)
-
         try {
             const storedKey = await AsyncStorage.getItem('encryptKey')
-            setIsDecrypted(storedKey == key)
+            const isCorrectKey = storedKey == key;
+            setIsDecrypted(isCorrectKey)
+
+            if (!isCorrectKey) {
+                throw new Error("Incorrect Key")
+            }
+            const decryptedContent = selectedNote ? decryptCypher(selectedNote.content, key) : ''
+            setEnterKey(false)
+            setNoteContent(decryptedContent)
         } catch (e) {
             setIsDecrypted(false)
         }
@@ -104,6 +108,8 @@ const OpenNote = ({ route, navigation } : { route: any, navigation: any },) => {
     }
 
     const startDecryption = () => {
+        if (isDecrypted) return;
+
         AsyncStorage.getItem("isFingerprint").then(res => {
             if (res === "1") {
                 startAuthentication();

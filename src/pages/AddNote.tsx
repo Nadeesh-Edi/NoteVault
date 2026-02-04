@@ -32,7 +32,8 @@ function AddNote({ navigation }: { navigation: any }): JSX.Element {
 
     const encryptContent = async () => {
         const storedKey = await AsyncStorage.getItem('encryptKey')
-        return storedKey ? createCypher(content, storedKey) : ''
+        const trimmedContent = content.trim()
+        return storedKey ? createCypher(trimmedContent, storedKey) : ''
     }
 
     const onPressSave = () => {
